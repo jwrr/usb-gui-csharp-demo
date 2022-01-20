@@ -162,11 +162,15 @@ namespace usb_gui
 
         private void sendCommandLine(string rxTerminationStr = G_prompt, bool updateStatusBox = false)
         {
-            if (!serialPort1.IsOpen)
+            try
+            {
+                serialPort1.WriteLine(commandLine.Text + "\n\r"); // FIXME try/catch needed to handle disconnect excepion System.InvalidOperationException: 'The port is closed.'
+            }
+            catch
             {
                 handleDisconnect();
             }
-            serialPort1.WriteLine(commandLine.Text + "\n\r");
+
             if (consoleScreen.Enabled)
             {
                 consoleScreen.AppendText(commandLine.Text + Environment.NewLine);
