@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using System.IO.Ports;
-
+using System.Diagnostics;
 
 namespace usb_gui
 {
@@ -22,40 +22,66 @@ namespace usb_gui
             buttonLeft.Text = "\u2B9c";
             buttonCenter.Text = "\u2B9d";
             buttonRight.Text = "\u2B9e";
-            groupBoxCommandLine.Visible = false;
             getAvailablePorts();
         }
 
-        void enableConnectedWidgets()
+        bool getAvailablePorts()
         {
-            buttonBackground.Enabled = true;
-            buttonClear.Enabled = true;
-            buttonLeft.Enabled = true;
-            buttonLoad.Enabled = true;
-            buttonCenter.Enabled = true;
-            buttonReceive.Enabled = true;
-            buttonRight.Enabled = true;
-            buttonSend.Enabled = true;
-            buttonStatus.Enabled = true;
-            buttonTrig.Enabled = true;
-            buttonLog.Enabled = true;
-            commandLine.Enabled = true;
-            consoleScreen.Enabled = true;
-            comboBoxAvailablePorts.Enabled = false;
-            buttonConnect.Enabled = false;
-        }
-
-        void getAvailablePorts()
-        {
+            timer1.Stop();
+            bool fail = false;
+            this.Text = this.Text.Split('-')[0];
+            this.Text = this.Text.Trim();
+            groupBoxButttons.Visible = false;
+            groupBoxCommandLine.Visible = false;
+            consoleScreen.Visible = false;
+            groupBoxLogo.Visible = false;
+            groupBoxMiddle.Visible = false;
+            groupBoxConnect.Visible = true;
+            buttonConnect.Visible = false;
+            comboBoxAvailablePorts.Items.Clear();
             string[] ports = SerialPort.GetPortNames();
-            comboBoxAvailablePorts.Items.AddRange(ports);
-            if (ports.Count() == 1)
+
+            string portName = serialPort1.PortName;
+
+            // the ports list contains the current port, but the
+            // current port close (for some reason). Check to see
+            // if the port can be opened. If its not the mark it
+            // as not connected.
+            bool openSuccess = true;
+            if (ports.Contains(portName))
             {
-                comboBoxAvailablePorts.SelectedIndex = 0;
-                buttonConnect.Enabled = true;
+                serialPort1.Close();
+                openSuccess = OpenSerialPort(portName);
+                if (openSuccess)
+                {
+                    serialPort1.Close();
+                }
+                else
+                {
+                    int i = Array.IndexOf(ports, portName);
+                    ports[i] += " Not Connected";
+                    fail = true;
+                }
             }
+
+            int portsCount = ports.Count();
+            if (portsCount == 0)
+            {
+                Array.Resize(ref ports, 1);    
+                ports[0] = "No Ports Found";
+                fail = true;
+            }
+            comboBoxAvailablePorts.Items.AddRange(ports);
+            comboBoxAvailablePorts.SelectedIndex = 0;
+            buttonConnect.Visible = (portsCount > 1) || (portsCount == 1 && openSuccess);
+            bool success = !fail;
+            return success;
         }
 
+        void handleDisconnect()
+        {
+            getAvailablePorts();
+        }
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
 
@@ -65,72 +91,93 @@ namespace usb_gui
         {
 
         }
+        
+        private bool OpenSerialPort(string portName)
+        {
+            bool success = false;
+            try
+            {
+                serialPort1.PortName = portName;
+                serialPort1.BaudRate = 9600;
+                serialPort1.Open();
+                success = true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                success = false;
+            }
+            catch (IOException)
+            {
+                success = false;
+            }
+            return success;
+        }
 
         private void buttonConnect_Click(object sender, EventArgs e)
         {
             string portName = comboBoxAvailablePorts.Text;
-
-            try
+            bool success = OpenSerialPort(portName);
+            if (success)
             {
-                if (comboBoxAvailablePorts.Text == "")
-                {
-                    consoleScreen.AppendText("Port not selected" + Environment.NewLine);
-                }
-                else
-                {
-                    serialPort1.PortName = portName;
-                    serialPort1.BaudRate = 9600;
-                    serialPort1.Open();
-                    enableConnectedWidgets();
-
-                    consoleScreen.AppendText("Connected to " + portName + Environment.NewLine + "> ");
-                    groupBoxConnect.Visible = false;
-                    groupBoxCommandLine.Visible = true;
-                    groupBoxLogo.Visible = true;
-                    groupBoxButttons.Visible = true;
-                    this.Text += " - " + portName;
-                }
-            }
-            catch (UnauthorizedAccessException)
-            {
-                consoleScreen.AppendText("Error connecting to port '" + portName + "'" + Environment.NewLine);
+                groupBoxConnect.Visible = false;
+                groupBoxCommandLine.Visible = true;
+                groupBoxLogo.Visible = true;
+                groupBoxButttons.Visible = true;
+                groupBoxMiddle.Visible = true;
+                consoleScreen.Enabled = true;
+                consoleScreen.AppendText("Connected to " + portName + Environment.NewLine + "=> ");
+                this.Text += " - " + portName;
+                timer1.Interval = 500;
+                timer1.Start();
             }
         }
 
-        private string rcvFromDevice()
+        private void rcvFromDevice(string rxTerminationStr = "", bool updateStatusBox = false)
         {
-            string rcvText = "";
-            string tmpText = serialPort1.ReadExisting();
-            while (tmpText != "")
+            if (updateStatusBox)
             {
-                rcvText += tmpText;
-                tmpText = serialPort1.ReadExisting();
+                textBoxStatus.Clear();
             }
-            return rcvText;
+            bool rxTerminatorFound = false;
+            while (!rxTerminatorFound)
+            {
+                string rxStr = serialPort1.ReadExisting();
+                if (rxStr != "")
+                {
+                    rxTerminatorFound = rxStr.Contains(rxTerminationStr);
+                    rxStr = rxStr.Replace("\r", "");
+                    rxStr = rxStr.Replace("\n", Environment.NewLine);
+                    if (consoleScreen.Enabled)
+                    {
+                        consoleScreen.AppendText(rxStr);
+                    }
+                    if (updateStatusBox)
+                    {
+                        rxStr = rxStr.Replace("=>", "");
+                        textBoxStatus.AppendText(rxStr);
+                    }
+                }
+            }
         }
 
-        private void sendCommandLine()
+        private void sendCommandLine(string rxTerminationStr = G_prompt, bool updateStatusBox = false)
         {
-            bool waitForAck = true;
+            if (!serialPort1.IsOpen)
+            {
+                handleDisconnect();
+            }
             serialPort1.WriteLine(commandLine.Text + "\n\r");
-            consoleScreen.AppendText(commandLine.Text + Environment.NewLine);
-            string rcvText = rcvFromDevice();
-            while (waitForAck && (rcvText == ""))
+            if (consoleScreen.Enabled)
             {
-                rcvText = rcvFromDevice();
+                consoleScreen.AppendText(commandLine.Text + Environment.NewLine);
             }
-            if (rcvText != "")
-            {
-                rcvText = rcvText.Replace("\r", "");
-                rcvText = rcvText.Replace("\n", Environment.NewLine);
-                consoleScreen.AppendText(rcvText);
-            }
+            rcvFromDevice(rxTerminationStr, updateStatusBox);
             commandLine.Text = "";
         }
 
         private void buttonSend_Click(object sender, EventArgs e)
         {
-            sendCommandLine();
+            sendCommandLine(G_prompt);
         }
 
         private void buttonReceive_Click(object sender, EventArgs e)
@@ -163,31 +210,35 @@ namespace usb_gui
         private void buttonLeft_Click(object sender, EventArgs e)
         {
             commandLine.Text = "a";
-            sendCommandLine();
+            sendCommandLine(G_prompt);
+            getStatus();
         }
 
         private void buttonCenter_Click(object sender, EventArgs e)
         {
             commandLine.Text = "s";
-            sendCommandLine();
+            sendCommandLine(G_prompt);
+            getStatus();
         }
 
         private void buttonRight_Click(object sender, EventArgs e)
         {
             commandLine.Text = "d";
-            sendCommandLine();
+            sendCommandLine(G_prompt);
+            getStatus();
         }
 
         private void buttonTrig_Click(object sender, EventArgs e)
         {
             commandLine.Text = "f";
-            sendCommandLine();
+            sendCommandLine(G_prompt);
+            getStatus();
         }
 
         private void buttonBackground_Click(object sender, EventArgs e)
         {
             commandLine.Text = "b";
-            sendCommandLine();
+            sendCommandLine(G_prompt);
         }
 
         private string[] slurpFile()
@@ -209,45 +260,75 @@ namespace usb_gui
             return lines;
         }
 
-
         private void buttonLoad_Click(object sender, EventArgs e)
         {
             commandLine.Text = "l";
-            sendCommandLine();
+            sendCommandLine(G_prompt);
             string[] samples = slurpFile();
             foreach (string sample in samples)
             {
                 commandLine.Text = sample;
-                sendCommandLine();
+                sendCommandLine(G_prompt);
             }
-        }
-
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-
-        }
-
-        private void buttonHelp_Click(object sender, EventArgs e)
-        {
-            commandLine.Text = "h";
-            sendCommandLine();
         }
 
         private void buttonClear_Click(object sender, EventArgs e)
         {
             commandLine.Text = "c";
-            sendCommandLine();
+            sendCommandLine(G_prompt);
         }
 
-        private void buttonStatus_Click(object sender, EventArgs e)
+        private void getStatus(bool consoleScreenEnabled = false)
         {
+            Boolean orig = consoleScreen.Enabled;
+            consoleScreen.Enabled = consoleScreenEnabled;
             commandLine.Text = "status";
-            sendCommandLine();
+            sendCommandLine(G_prompt,true);
+            consoleScreen.Enabled = orig;
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
             consoleScreen.Visible = !consoleScreen.Visible;
+        }
+
+        private void buttonRefresh_Click(object sender, EventArgs e)
+        {
+            bool success = getAvailablePorts();
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        { // close
+            serialPort1.Close();
+            handleDisconnect();
+        }
+
+        private void timer1_Tick_1(object sender, EventArgs e)
+        {
+            getStatus();
+        }
+
+        private void button1_Click_2(object sender, EventArgs e)
+        { // View Wave
+            commandLine.Text = "v";
+            sendCommandLine(G_prompt);
+        }
+
+        private void groupBoxLogo_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void buttonTimer_Click(object sender, EventArgs e)
+        {
+            if (timer1.Enabled)
+            {
+                timer1.Stop();
+            }
+            else
+            {
+                timer1.Start();
+            }
         }
     }
 }
