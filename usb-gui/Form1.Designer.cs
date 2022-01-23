@@ -29,9 +29,9 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend4 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.comboBoxAvailablePorts = new System.Windows.Forms.ComboBox();
             this.commandLine = new System.Windows.Forms.TextBox();
@@ -172,9 +172,9 @@
             this.buttonTrig.BackColor = System.Drawing.Color.Gray;
             this.buttonTrig.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonTrig.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
-            this.buttonTrig.Location = new System.Drawing.Point(94, 374);
+            this.buttonTrig.Location = new System.Drawing.Point(77, 374);
             this.buttonTrig.Name = "buttonTrig";
-            this.buttonTrig.Size = new System.Drawing.Size(166, 83);
+            this.buttonTrig.Size = new System.Drawing.Size(196, 83);
             this.buttonTrig.TabIndex = 8;
             this.buttonTrig.Text = "TRIGGER";
             this.buttonTrig.TextAlign = System.Drawing.ContentAlignment.TopCenter;
@@ -229,7 +229,7 @@
             // 
             // buttonConnect
             // 
-            this.buttonConnect.BackColor = System.Drawing.Color.CadetBlue;
+            this.buttonConnect.BackColor = System.Drawing.Color.Gray;
             this.buttonConnect.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonConnect.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
             this.buttonConnect.Location = new System.Drawing.Point(253, 64);
@@ -254,7 +254,7 @@
             // 
             // buttonRefresh
             // 
-            this.buttonRefresh.BackColor = System.Drawing.Color.CadetBlue;
+            this.buttonRefresh.BackColor = System.Drawing.Color.Gray;
             this.buttonRefresh.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonRefresh.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
             this.buttonRefresh.Location = new System.Drawing.Point(94, 64);
@@ -282,9 +282,9 @@
             this.groupBoxFlash.Controls.Add(this.buttonEraseAll);
             this.groupBoxFlash.Controls.Add(this.buttonLoad);
             this.groupBoxFlash.Controls.Add(this.buttonClear);
-            this.groupBoxFlash.Location = new System.Drawing.Point(359, 19);
+            this.groupBoxFlash.Location = new System.Drawing.Point(359, 3);
             this.groupBoxFlash.Name = "groupBoxFlash";
-            this.groupBoxFlash.Size = new System.Drawing.Size(217, 450);
+            this.groupBoxFlash.Size = new System.Drawing.Size(217, 466);
             this.groupBoxFlash.TabIndex = 17;
             this.groupBoxFlash.TabStop = false;
             this.groupBoxFlash.Visible = false;
@@ -452,17 +452,17 @@
             // 
             this.chartWaveform.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            chartArea1.Name = "ChartArea1";
-            this.chartWaveform.ChartAreas.Add(chartArea1);
-            legend1.Name = "Legend1";
-            this.chartWaveform.Legends.Add(legend1);
+            chartArea4.Name = "ChartArea1";
+            this.chartWaveform.ChartAreas.Add(chartArea4);
+            legend4.Name = "Legend1";
+            this.chartWaveform.Legends.Add(legend4);
             this.chartWaveform.Location = new System.Drawing.Point(17, 41);
             this.chartWaveform.Name = "chartWaveform";
-            series1.ChartArea = "ChartArea1";
-            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series1.Legend = "Legend1";
-            series1.Name = "Series1";
-            this.chartWaveform.Series.Add(series1);
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series4.Legend = "Legend1";
+            series4.Name = "Series1";
+            this.chartWaveform.Series.Add(series4);
             this.chartWaveform.Size = new System.Drawing.Size(997, 292);
             this.chartWaveform.TabIndex = 0;
             this.chartWaveform.Text = "chart1";
@@ -498,9 +498,9 @@
             this.groupBoxMiddle.Controls.Add(this.buttonCenter);
             this.groupBoxMiddle.Controls.Add(this.buttonTrig);
             this.groupBoxMiddle.Controls.Add(this.buttonLeft);
-            this.groupBoxMiddle.Location = new System.Drawing.Point(6, 12);
+            this.groupBoxMiddle.Location = new System.Drawing.Point(6, 3);
             this.groupBoxMiddle.Name = "groupBoxMiddle";
-            this.groupBoxMiddle.Size = new System.Drawing.Size(347, 457);
+            this.groupBoxMiddle.Size = new System.Drawing.Size(347, 466);
             this.groupBoxMiddle.TabIndex = 22;
             this.groupBoxMiddle.TabStop = false;
             this.groupBoxMiddle.Text = "Status";
@@ -512,12 +512,12 @@
             this.textBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBox1.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
-            this.textBox1.Location = new System.Drawing.Point(109, 414);
+            this.textBox1.Location = new System.Drawing.Point(94, 414);
             this.textBox1.Name = "textBox1";
             this.textBox1.ReadOnly = true;
-            this.textBox1.Size = new System.Drawing.Size(138, 23);
+            this.textBox1.Size = new System.Drawing.Size(166, 23);
             this.textBox1.TabIndex = 26;
-            this.textBox1.Text = "(click and hold)";
+            this.textBox1.Text = "(press and hold)";
             this.textBox1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // textBoxStatus
@@ -710,9 +710,9 @@
             this.groupBoxWaves.Controls.Add(this.buttonViewNext);
             this.groupBoxWaves.Controls.Add(this.chartWaveform);
             this.groupBoxWaves.Controls.Add(this.textBoxWave);
-            this.groupBoxWaves.Location = new System.Drawing.Point(605, 19);
+            this.groupBoxWaves.Location = new System.Drawing.Point(605, 3);
             this.groupBoxWaves.Name = "groupBoxWaves";
-            this.groupBoxWaves.Size = new System.Drawing.Size(1026, 450);
+            this.groupBoxWaves.Size = new System.Drawing.Size(1026, 466);
             this.groupBoxWaves.TabIndex = 28;
             this.groupBoxWaves.TabStop = false;
             this.groupBoxWaves.Text = "Waves";
