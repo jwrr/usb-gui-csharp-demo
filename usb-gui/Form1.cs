@@ -36,8 +36,6 @@ namespace usb_gui
             this.Text = this.Text.Split('-')[0];
             this.Text = this.Text.Trim();
             groupBoxFlash.Visible = false;
-            groupBoxUSB.Visible = false;
-            consoleScreen.Visible = false;
             groupBoxLogo.Visible = false;
             groupBoxMiddle.Visible = false;
             groupBoxConnect.Visible = true;
@@ -126,13 +124,9 @@ namespace usb_gui
             if (success)
             {
                 groupBoxConnect.Visible = false;
-                groupBoxViewOptions.Visible = true;
-                buttonUSBOption.BackColor = Color.Gray;
-                groupBoxUSB.Visible = true;
                 groupBoxLogo.Visible = true;
                 groupBoxFlash.Visible = true;
                 groupBoxMiddle.Visible = true;
-                groupBoxConfig.Visible = true;
                 consoleScreen.Enabled = true;
                 consoleScreen.AppendText("Connected to " + portName + Environment.NewLine + "=> ");
                 this.Text += " - " + portName;
@@ -277,6 +271,10 @@ namespace usb_gui
         {
             string[] lines = {};
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
+            if (G_defaultFilename != "")
+            {
+                openFileDialog1.FileName = G_defaultFilename;
+            }
             DialogResult result = openFileDialog1.ShowDialog();
             if (result == DialogResult.OK)
             {
@@ -284,6 +282,7 @@ namespace usb_gui
                 try
                 {
                     lines = File.ReadAllLines(file);
+                    G_defaultFilename = file;
                 }
                 catch (IOException)
                 {
@@ -292,30 +291,93 @@ namespace usb_gui
             return lines;
         }
 
-        private RadioButton GetCheckedRadio(Control container)
+        private RadioButton getCheckedRadio(Control container)
         {
+            //Debug.WriteLine("In getCheckedRadio");
             foreach (var c in container.Controls)
             {
                 RadioButton r = c as RadioButton;
                 if (r != null && r.Checked)
                 {
+                    //Debug.WriteLine("radio found " + r.Text);
                     return r;
+                }
+            }
+            //Debug.WriteLine("radio not found");
+            return null;
+        }
+
+        private RadioButton setNextRadio(Control container)
+        {
+            bool found = false;
+            foreach (var c in container.Controls)
+            {
+                RadioButton r = c as RadioButton;
+                if (r != null && found)
+                {
+                    Debug.WriteLine("radio being checked");
+                    r.Checked = true;
+                    return r;
+                }
+                if (r != null && r.Checked)
+                {
+                    found = true;
                 }
             }
             return null;
         }
 
-        private void buttonLoad_Click(object sender, EventArgs e)
+        private RadioButton setPrevRadio(Control container)
         {
-            RadioButton r = GetCheckedRadio(groupBoxFlash);
+            RadioButton rPrev = null;
+            RadioButton rFirst = null;
+            RadioButton rLast = null;
+
+            foreach (var c in container.Controls)
+            {
+                RadioButton r = c as RadioButton;
+                if (r != null && r.Checked)
+                {
+                    if (rPrev != null)
+                    {
+                        rPrev.Checked = true;
+                        return rPrev;
+                    }
+                }
+                if (r != null)
+                {
+                    rPrev = r;
+                }
+
+                if (r != null)
+                {
+                    rLast = r;
+                }
+            }
+            rLast.Checked = true;
+            return rLast;
+        }
+
+        private void sendChangeMode(string newMode)
+        {
+            commandLine.Text = newMode;
+            sendCommandLine(G_prompt);
+            getStatus();
+        }
+
+        private void sendChangeModeRadio()
+        {
+            RadioButton r = getCheckedRadio(groupBoxFlash);
             if (r == null) return;
 
             string mode = r.Text;
-            commandLine.Text = mode;
-            sendCommandLine(G_prompt);
-            getStatus();
+            sendChangeMode(mode);
+        }
 
-            commandLine.Text = "l";
+        private void writeWave()
+        {
+            sendChangeModeRadio();
+            commandLine.Text = "w";
             sendCommandLine(G_prompt);
             string[] samples = slurpFile();
             foreach (string sample in samples)
@@ -323,13 +385,47 @@ namespace usb_gui
                 commandLine.Text = sample;
                 sendCommandLine(G_prompt);
             }
+        }
+
+        private void sendEraseCommand(string modeStr = "")
+        {
+            if (modeStr == "")
+            {
+                sendChangeModeRadio();
+            }
+            else
+            {
+                commandLine.Text = modeStr;
+                sendCommandLine(G_prompt);
+            }
+            commandLine.Text = "e";
+            sendCommandLine(G_prompt);
+        }
+
+        private void eraseAllTables()
+        {
+            for (int mode = 0; mode < 9; mode++)
+            {
+                String modeStr = mode.ToString();
+                sendEraseCommand(modeStr);
+            }
+            readWave();
+            getStatus();
+        }
+
+        private void buttonLoad_Click(object sender, EventArgs e)
+        {
+            writeWave();
+            readWave();
             getStatus();
         }
 
         private void buttonClear_Click(object sender, EventArgs e)
-        { // erase wave
-            commandLine.Text = "e";
-            sendCommandLine(G_prompt);
+        {
+            sendEraseCommand();
+            readWave();
+            getStatus();
+
         }
 
         private void getStatus(bool consoleScreenEnabled = false)
@@ -359,38 +455,46 @@ namespace usb_gui
 
         private void PlotWaveform()
         {
-            //DataSet ds = new DataSet();
-
-            //chartWaveform.
-        }
-
-        private void button1_Click_2(object sender, EventArgs e)
-        { // View Wave
-            commandLine.Text = "v";
-            sendCommandLine(G_prompt);
-            buttonUSBOption.BackColor = Color.Gainsboro;
-            buttonWavesOption.BackColor = Color.Gainsboro;
-            buttonConfigOption.BackColor = Color.Gainsboro;
-            buttonLog.BackColor = Color.Gray;
-            consoleScreen.BringToFront();
-            consoleScreen.Visible = false;
-            PlotWaveform();
 
             string[] lines = consoleScreen.Text.Split('\n');
             int len = lines.Length;
-            textBoxWave.Text = lines[len-2];
+            textBoxWave.Text = lines[len - 2];
 
             string[] samplesString = textBoxWave.Text.Split(',');
             List<int> samplesInt = new List<int>();
             for (int i = 0; i < samplesString.Length; i++)
             {
-                samplesInt.Add(Int32.Parse(samplesString[i]));
+                try
+                {
+                    samplesInt.Add(Int32.Parse(samplesString[i]));
+                }
+                catch
+                {
+                    return;
+                }
             }
 
             chartWaveform.Series.Clear();
             var series = new Series("Waveform");
             series.Points.DataBindY(samplesInt);
             chartWaveform.Series.Add(series);
+        }
+
+        private void readWave()
+        {
+            if (checkBoxViewWaves.Checked)
+            {
+                sendChangeModeRadio();
+                commandLine.Text = "r";
+                sendCommandLine(G_prompt);
+                PlotWaveform();
+            }
+        }
+
+
+        private void button1_Click_2(object sender, EventArgs e)
+        {
+            readWave();
         }
 
         private void groupBoxLogo_Enter(object sender, EventArgs e)
@@ -473,67 +577,139 @@ namespace usb_gui
 
         private void buttonFlashOption_Click(object sender, EventArgs e)
         { // now WavesOption
-            buttonUSBOption.BackColor = Color.Gainsboro;
-            buttonWavesOption.BackColor = Color.Gray;
-            buttonConfigOption.BackColor = Color.Gainsboro;
-            buttonLog.BackColor = Color.Gainsboro;
             groupBoxFlash.BringToFront();
-            consoleScreen.Visible = false;
         }
 
         private void buttonUSBOption_Click(object sender, EventArgs e)
         {
-            buttonUSBOption.BackColor = Color.Gray;
-            buttonWavesOption.BackColor = Color.Gainsboro;
-            buttonConfigOption.BackColor = Color.Gainsboro;
-            groupBoxUSB.BringToFront();
-            consoleScreen.BringToFront();
-            consoleScreen.Visible = true;
         }
 
         private void buttonConfigOption_Click(object sender, EventArgs e)
         {
-            buttonUSBOption.BackColor = Color.Gainsboro;
-            buttonWavesOption.BackColor = Color.Gainsboro;
-            buttonConfigOption.BackColor = Color.Gray;
-            buttonLog.BackColor = Color.Gainsboro;
             groupBoxConfig.BringToFront();
-            consoleScreen.Visible = false;
-
-        }
-        private void button1_Click(object sender, EventArgs e)
-        {
-            buttonUSBOption.BackColor = Color.Gainsboro;
-            buttonWavesOption.BackColor = Color.Gainsboro;
-            buttonConfigOption.BackColor = Color.Gainsboro;
-            buttonLog.BackColor = Color.Gray;
-            consoleScreen.BringToFront();
-            consoleScreen.Visible = !consoleScreen.Visible;
-        }
-
-        private void checkBox8_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void checkBox6_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void checkBox2_CheckedChanged(object sender, EventArgs e)
-        {
 
         }
 
         private void radioButton1_CheckedChanged(object sender, EventArgs e)
         {
-
+            if (radioButton1.Checked)
+            {
+                readWave();
+                getStatus();
+            }
         }
 
         private void radioButton9_CheckedChanged(object sender, EventArgs e)
         {
+            if (radioButton9.Checked)
+            {
+                readWave();
+                getStatus();
+            }
+        }
 
+        private void buttonEraseAll_Click(object sender, EventArgs e)
+        {
+            eraseAllTables();
+        }
+
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton2.Checked)
+            {
+                readWave();
+                getStatus();
+            }
+        }
+
+        private void radioButton3_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton3.Checked)
+            {
+                readWave();
+                getStatus();
+            }
+        }
+
+        private void radioButton4_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton4.Checked)
+            {
+                readWave();
+                getStatus();
+            }
+        }
+
+        private void radioButton5_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton5.Checked)
+            {
+                readWave();
+                getStatus();
+            }
+        }
+
+        private void radioButton6_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton6.Checked)
+            {
+                readWave();
+                getStatus();
+            }
+        }
+
+        private void radioButton7_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton7.Checked)
+            {
+                readWave();
+                getStatus();
+            }
+        }
+
+        private void radioButton8_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton8.Checked)
+            {
+                readWave();
+                getStatus();
+            }
+        }
+
+        private void checkBoxViewWaves_CheckedChanged(object sender, EventArgs e)
+        {
+            groupBoxWaves.Visible = checkBoxViewWaves.Checked;
+            if (checkBoxViewWaves.Checked)
+            {
+                groupBoxWaves.BringToFront();
+                readWave();
+                getStatus();
+            }
+        }
+
+        private void checkBoxViewConsole_CheckedChanged(object sender, EventArgs e)
+        {
+            groupBoxConsole.Visible = checkBoxViewConsole.Checked;
+            if (checkBoxViewConsole.Checked)
+            {
+                groupBoxConsole.BringToFront();
+            }
+        }
+
+        private void checkBoxConfig_CheckedChanged(object sender, EventArgs e)
+        {
+            groupBoxConfig.Visible = checkBoxConfig.Checked;
+            if (checkBoxConfig.Checked)
+            {
+                groupBoxConfig.BringToFront();
+            }
+        }
+
+        private void buttonViewNext_Click(object sender, EventArgs e)
+        {
+            //setNextRadio(groupBoxFlash);
+            setPrevRadio(groupBoxFlash);
+            readWave();
         }
     }
 }
