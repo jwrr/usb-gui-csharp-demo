@@ -307,6 +307,45 @@ namespace usb_gui
             return null;
         }
 
+        private String getCheckedRadioText(Control container)
+        {
+            //Debug.WriteLine("In getCheckedRadio");
+            foreach (var c in container.Controls)
+            {
+                RadioButton r = c as RadioButton;
+                if (r != null && r.Checked)
+                {
+                    return r.Text;
+                }
+            }
+            return null;
+        }
+
+        private RadioButton getRadioByText(Control container, String name)
+        {
+            foreach (var c in container.Controls)
+            {
+                RadioButton r = c as RadioButton;
+                if (r != null && r.Text == name)
+                {
+                    return r;
+                }
+            }
+            return null;
+        }
+
+        private RadioButton setRadioByText(Control container, String name)
+        {
+            RadioButton r = getRadioByText(container, name);
+            if (r != null)
+            {
+                r.Checked = true;
+                return r;
+            }
+            return null;
+        }
+
+
         private RadioButton setNextRadio(Control container)
         {
             bool found = false;
@@ -326,6 +365,7 @@ namespace usb_gui
             }
             return null;
         }
+
 
         private RadioButton setPrevRadio(Control container)
         {
@@ -357,6 +397,8 @@ namespace usb_gui
             rLast.Checked = true;
             return rLast;
         }
+
+
 
         private void sendChangeMode(string newMode)
         {
